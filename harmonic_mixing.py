@@ -51,6 +51,18 @@ class CamelotKey:
             else:
                 return False
 
+    @classmethod
+    def fromstring(cls, key_string):
+        pattern = re.compile(r'^(\d+)([A-B])$')
+        match = pattern.match(key_string)
+        index = int(match.group(1))
+        short_interval = match.group(2)
+        if short_interval == 'A':
+            interval = 'minor'
+        elif short_interval == 'B':
+            interval = 'major'
+        return cls(index, interval)
+
     def get_harmonic_keys(self, shuffle=False):
         harmonic = []
         harmonic.append(self)
@@ -107,32 +119,16 @@ class HarmonicMix:
     def __repr__(self):
         return str(self.keys)
 
-    def get_mix(self):
-        return self.keys
-
-    def init_from_string(self, keys):
+    @classmethod
+    def fromstrings(cls, keys):
         obj_keys = []
         for key in keys:
-            index, interval = self.parse(key)
-            logger.debug(index)
-            logger.debug(interval)
-            obj_key = CamelotKey(index, interval)
+            obj_key = CamelotKey.fromstring(key)
             obj_keys.append(obj_key)
-        self.keys = obj_keys.copy()
-        self.harmonic_keys = self.get_harmonic_keys()
-        self.subharmonic_keys = self.get_subharmonic_keys()
-        self.all_keys = self.get_all_keys()
+        return cls(obj_keys)
 
-    def parse(self, key):
-        pattern = re.compile(r'^(\d+)([A-B])$')
-        match = pattern.match(key)
-        index = int(match.group(1))
-        short_interval = match.group(2)
-        if short_interval == 'A':
-            interval = 'minor'
-        elif short_interval == 'B':
-            interval = 'major'
-        return index, interval
+    def get_mix(self):
+        return self.keys
 
     def get_harmonic_keys(self):
         harmonic_keys = {}
@@ -322,8 +318,7 @@ if __name__ == '__main__':
 
     valid_mixes = []
     keys = cli_options.keys
-    mix = HarmonicMix([])
-    mix.init_from_string(keys)
+    mix = HarmonicMix.fromstrings(keys)
     logger.debug(mix)
     valid_mixes = mix.find_all_recursive(cli_options.gaps,
                                          cli_options.all,
@@ -333,8 +328,7 @@ if __name__ == '__main__':
     mix_filter = None
     found_mixes = len(uniq_valid_mixes)
     if cli_options.filter:
-        mix_filter = HarmonicMix([])
-        mix_filter.init_from_string(cli_options.filter)
+        mix_filter = HarmonicMix.fromstrings(cli_options.filter)
         found_mixes = 0
         logger.info('filtering for %s' % (mix_filter.get_mix()))
     for valid_mix in uniq_valid_mixes:
